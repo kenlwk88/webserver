@@ -1,4 +1,5 @@
-using Swashbuckle.AspNetCore.SwaggerUI;
+using Core.DataAccess.SqlLite;
+using Microsoft.AspNetCore.ResponseCompression;
 using Web.Server.Extensions;
 using Web.Server.Middleware;
 
@@ -10,12 +11,30 @@ config.SetBasePath(Directory.GetCurrentDirectory());
 config.AddEnvironmentVariables();
 
 // Add services to the container.
-
 services.AddControllers();
 services.AddSwagger(config);
+services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<GzipCompressionProvider>();
+    options.Providers.Add<BrotliCompressionProvider>();
+});
+services.AddControllersWithViews()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
+    });
 services.AddApplicationServices(builder, config);
+services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
+
+// ensure database and tables exist
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<DbContext>();
+    await context.Init();
+}
 
 // Configure the HTTP request pipeline.
 

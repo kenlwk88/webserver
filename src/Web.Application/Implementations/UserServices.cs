@@ -1,10 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Web.Application;
+﻿using AutoMapper;
+using Core.DataAccess.SqlLite;
+using Microsoft.Extensions.Logging;
 using Web.Domain;
 using Web.Domain.User;
 using Web.Domain.User.Common;
@@ -14,16 +10,37 @@ namespace Web.Application
     public class UserServices : IUserServices
     {
         private readonly ILogger<UserServices> _logger;
-        public UserServices(ILogger<UserServices> logger)
+        private readonly IUserRepo _userRepo;
+        private readonly IMapper _mapper;
+        public UserServices(ILogger<UserServices> logger, IUserRepo userRepo, IMapper mapper)
         {
             _logger= logger;
+            _userRepo= userRepo;
+            _mapper= mapper;
         }
         public async Task<GetUserApiResponse> Get(ApplyFilter filter)
         {
             GetUserApiResponse response = new();
             try
             {
+                var users = await _userRepo.GetAll();
 
+                #region Filter
+                if (filter != null) 
+                {
+                    if (filter.email != null && filter.email.Trim().Length > 0) 
+                    {
+                        users = users.Where(x => x.Email.ToLower().Contains(filter.email.ToLower())).OrderBy(y => y.Email).ToList();
+                    }
+                    if (filter.phone != null && filter.phone.Trim().Length > 0)
+                    {
+                        users = users.Where(y => y.Phone != null).Where(x => x.Phone.ToLower().Contains(filter.phone.ToLower())).OrderBy(y => y.Phone).ToList();
+                    }
+                }
+                #endregion
+
+                var result = _mapper.Map<List<UserModel>>(users);
+                response.Data = result;
             }
             catch (Exception ex)
             {
@@ -37,7 +54,13 @@ namespace Web.Application
             CreateUserApiResponse response = new();
             try
             {
+                //Validation email is exist or not. Do not allow duplicate email
+                var user = await _userRepo.GetByEmail(request.Email);
+                if (user != null)
+                    return Error.Response(202).TryCast<CreateUserApiResponse>();
 
+                //Create User
+                await _userRepo.Create(_mapper.Map<UserDto>(request));
             }
             catch (Exception ex)
             {
@@ -51,7 +74,22 @@ namespace Web.Application
             UpdateUserApiResponse response = new();
             try
             {
+                //Validate User
+                var user = await _userRepo.GetById(request.Id);
+                if(user == null)
+                    return Error.Response(201).TryCast<UpdateUserApiResponse>();
 
+                //Validate User Email
+                if (request.Email.Trim().ToLower() != user.Email.Trim().ToLower()) 
+                {
+                    //Check duplicate email
+                    var otherUser = await _userRepo.GetByEmail(request.Email);
+                    if (otherUser != null)
+                        return Error.Response(202).TryCast<UpdateUserApiResponse>();
+                }
+
+                //Update User
+                await _userRepo.Update(_mapper.Map<UserDto>(request));
             }
             catch (Exception ex)
             {
@@ -65,7 +103,13 @@ namespace Web.Application
             DeleteUserApiResponse response = new();
             try
             {
+                //Validate User
+                var user = await _userRepo.GetById(request.Id);
+                if (user == null)
+                    return Error.Response(201).TryCast<DeleteUserApiResponse>();
 
+                //Delete User
+                await _userRepo.Delete(request.Id);
             }
             catch (Exception ex)
             {

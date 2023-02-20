@@ -1,12 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
+﻿using Web.Domain.User.Common;
 
 namespace Web.Domain.User
 {
-    public class DeleteUserApiRequest
+    public class DeleteUserApiRequest : UserIdModel
     {
-        [Required]
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
     }
 }

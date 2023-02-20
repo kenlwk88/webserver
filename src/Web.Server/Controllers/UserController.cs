@@ -4,11 +4,19 @@ using Web.Application;
 using Web.Domain;
 using Web.Domain.User;
 using Web.Domain.User.Common;
+using Web.Server.Filter.Security;
+using Web.Server.Filter.Validation;
 
 namespace Web.Server.Controllers
 {
+    [ApiKey]
     [ApiController]
+    [ValidationFilter]
     [Route("api/user")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(CommonResponse), (int)HttpStatusCode.Unauthorized)]
+    [ProducesResponseType(typeof(ValidationErrorResponse), (int)HttpStatusCode.BadRequest)]
     public class UserController : ControllerBase
     {
         private readonly ILogger<UserController> _logger;

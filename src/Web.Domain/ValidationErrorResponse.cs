@@ -3,13 +3,13 @@ using System.Text.Json.Serialization;
 
 namespace Web.Domain
 {
-    public class CommonResponse
+    public class ValidationErrorResponse
     {
         [JsonProperty("code", Order = int.MinValue)]
-        public virtual int Code { get; set; } = 0;
+        public int Code { get; set; }
         [JsonProperty("message", Order = int.MinValue)]
-        public virtual string? Message { get; set; } = string.Empty;
+        public string? Message { get; set; }
         [JsonProperty("data", Order = int.MaxValue)]
-        public virtual object? Data { get; set; }
+        public List<string> Data { get; set; }
     }
 }
