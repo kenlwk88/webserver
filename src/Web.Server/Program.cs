@@ -11,7 +11,11 @@ config.SetBasePath(Directory.GetCurrentDirectory());
 config.AddEnvironmentVariables();
 
 // Add services to the container.
-services.AddControllers();
+services.AddControllers()
+    .AddJsonOptions( options => 
+    {
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
 services.AddSwagger(config);
 services.AddResponseCompression(options =>
 {
